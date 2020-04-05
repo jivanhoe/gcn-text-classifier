@@ -1,28 +1,38 @@
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as f
 
 
 class GraphConvolutionalLayer(nn.Module):
 
-    def __init__(self, in_features: int, out_features: int):
+    def __init__(self, in_features: int, out_features: int, activation: Optional[Callable] = None):
         super(GraphConvolutionalLayer, self).__init__()
         self.weight_matrix = nn.Linear(in_features, out_features, bias=False)
+        self.activation = activation
 
-    def forward(self, input: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
-        return torch.matmul(adjacency, self.weight_matrix(input))
+    def forward(self, inputs: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
+        hidden, adjacency = inputs
+        hidden = torch.matmul(adjacency, self.weight_matrix(hidden))
+        if self.activation:
+            hidden = self.activation(hidden)
+        return hidden, adjacency
 
 
-class SumPoolLayer(nn.Module):
+class FullyConnectedLayer(nn.Module):
 
-    def __init__(self, in_features: int, normalize: bool = True):
-        super(SumPoolLayer, self).__init__()
-        self.softmax = nn.Softmax(dim=-1)
+    def __init__(self, in_features: int, out_features: int, activation: Optional[Callable] = None):
+        super(FullyConnectedLayer, self).__init__()
+        self.weight_matrix = nn.Linear(in_features, out_features, bias=False)
+        self.activation = activation
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
-        return self.softmax(input.mean(dim=0))
+    def forward(self, input: torch.Tensor, activation: Optional[Callable] = None) -> torch.Tensor:
+        output = self.weight_matrix(input)
+        if self.activation:
+            output = self.activation(output)
+        return output
 
 
 class GraphConvolutionalNetwork(nn.Module):
@@ -30,40 +40,39 @@ class GraphConvolutionalNetwork(nn.Module):
     def __init__(
             self,
             in_features: int,
-            gc1_hidden_size: int,
-            gc2_hidden_size: int,
-            fc1_hidden_size: int,
-            fc2_hidden_size: int
+            gc_hidden_layer_sizes: List[int],
+            fc_hidden_layer_sizes: List[int],
+            gc_activation: Callable = f.selu,
+            fc_activation: Callable = f.relu
     ):
         super(GraphConvolutionalNetwork, self).__init__()
-        self.gc1 = GraphConvolutionalLayer(
-            in_features=in_features,
-            out_features=gc1_hidden_size
+
+        self.gc_layers = nn.Sequential(
+            *[
+                GraphConvolutionalLayer(
+                    in_features=in_features if i == 0 else gc_hidden_layer_sizes[i - 1],
+                    out_features=gc_hidden_layer_sizes[i],
+                    activation=gc_activation
+                )
+                for i in range(len(gc_hidden_layer_sizes))
+            ]
         )
-        self.gc2 = GraphConvolutionalLayer(
-            in_features=gc1_hidden_size,
-            out_features=gc2_hidden_size
+        self.fc_layers = nn.Sequential(
+            *[
+                FullyConnectedLayer(
+                    in_features=gc_hidden_layer_sizes[-1] if i == 0 else fc_hidden_layer_sizes[i - 1],
+                    out_features=fc_hidden_layer_sizes[i],
+                    activation=fc_activation
+                )
+                for i in range(len(gc_hidden_layer_sizes))
+            ]
         )
-        self.sumpool = SumPoolLayer(in_features=gc2_hidden_size)
-        self.fc1 = nn.Linear(
-            in_features=gc2_hidden_size,
-            out_features=fc1_hidden_size
-        )
-        self.fc2 = nn.Linear(
-            in_features=fc1_hidden_size,
-            out_features=fc2_hidden_size
-        )
-        self.relu = nn.ReLU()
 
     def forward(self, input: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
-        hidden = self.gc1(input, adjacency)
-        hidden = self.relu(hidden)
-        hidden = self.gc2(hidden, adjacency)
-        hidden = self.relu(hidden)
-        hidden = self.sumpool(hidden)
-        hidden = self.fc1(hidden)
-        hidden = self.relu(hidden)
-        hidden = self.fc2(hidden)
+        hidden, _ = self.gc_layers((input, adjacency))
+        if self.fc_layers:
+            hidden = hidden.mean(dim=0)  # f.softmax(hidden.sum(dim=0))
+            hidden = self.fc_layers(hidden)
         return hidden
 
 

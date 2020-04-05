@@ -11,10 +11,8 @@ if __name__ == "__main__":
 
     gcn = GraphConvolutionalNetwork(
         in_features=len(vocab) + 1,
-        gc1_hidden_size=256,
-        gc2_hidden_size=128,
-        fc1_hidden_size=64,
-        fc2_hidden_size=2
+        gc_hidden_layer_sizes=[512, 256],
+        fc_hidden_layer_sizes=[128, 2]
     )
 
     train(
