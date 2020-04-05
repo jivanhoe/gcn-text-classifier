@@ -7,18 +7,19 @@ logger = logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
 
-    train_data, test_data, vocab = get_data(max_examples_per_class=500)
+    train_data, test_data, vocab = get_data(max_examples_per_class=1000)
 
     gcn = GraphConvolutionalNetwork(
         in_features=len(vocab) + 1,
-        gc_hidden_sizes=[512, 256],
-        fc_hidden_sizes=[128, 2],
-        softmax_outputs=True
+        gc1_hidden_size=256,
+        gc2_hidden_size=128,
+        fc1_hidden_size=64,
+        fc2_hidden_size=2
     )
 
     train(
         model=gcn,
         data=train_data,
-        num_epochs=20,
-        learning_rate=1e-2
+        num_epochs=300,
+        learning_rate=1e-3
     )
