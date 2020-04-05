@@ -11,7 +11,7 @@ NUM_TRAINING_EXAMPLES = 100
 N_EPOCHS = 3
 
 
-def test_forward():
+def test_forward() -> None:
     gcn = GraphConvolutionalNetwork(
         in_features=NUM_FEATURES,
         gc_hidden_sizes=[512, 256, 128, 64],
@@ -24,7 +24,7 @@ def test_forward():
     assert output.shape[0] == NUM_CLASSES
 
 
-def test_train():
+def test_train() -> None:
     gcn = GraphConvolutionalNetwork(
         in_features=NUM_FEATURES,
         gc_hidden_sizes=[512, 256, 128, 64],

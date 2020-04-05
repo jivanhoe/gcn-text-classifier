@@ -7,3 +7,4 @@ sys.path.insert(0, path + '/../')
 
 if __name__ == "__main__":
     pytest.main(["-x", "model_tests.py"])
+    pytest.main(["-x", "data_processing_tests.py"])

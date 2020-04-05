@@ -54,3 +54,4 @@ def train(
         logger.info(f"Epochs completed: \t {i + 1}/{num_epochs}")
         logger.info(f"Mean loss: \t {'{0:.4f}'.format(total_loss / count)}")
         logger.info("-" * 50)
+

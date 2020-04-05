@@ -17,15 +17,16 @@ class GraphConvolutionalLayer(nn.Module):
 
 class SumPoolLayer(nn.Module):
 
-    def __init__(self, in_features: int, normalize: bool = True):
+    def __init__(self, in_features: int, normalize: bool = False):
         super(SumPoolLayer, self).__init__()
         self.batch_norm = nn.BatchNorm1d(in_features)
         self.normalize = normalize
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         if self.normalize:
+            self.eval()
             input = self.batch_norm(input)
-        return input.sum(dim=0)
+        return input.mean(dim=0)
 
 
 class GraphConvolutionalNetwork(nn.Module):
