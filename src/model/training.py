@@ -1,12 +1,11 @@
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Optional
 
 import torch
 import torch.nn as nn
 import logging
 
-from model.gcn import GraphConvolutionalNetwork
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+from model.gcn import GraphConvolutionalNetwork, DEVICE
+from utils.metrics import calculate_metrics, log_metrics
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,21 +13,24 @@ logger = logging.getLogger(__name__)
 
 def train(
         model: GraphConvolutionalNetwork,
-        data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+        train_data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+        test_data: Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = None,
         criterion: Callable = nn.CrossEntropyLoss(),
         num_epochs: int = 10,
-        learning_rate: float = 1e-3
+        learning_rate: float = 1e-3,
+        metrics_to_log: Optional[List[str]] = None
 ) -> None:
 
     # Send model to device and initialize optimize
     model = model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    logger.info("training model...")
     for i in range(num_epochs):
 
         count = 0
         total_loss = 0
-        for input, adjacency, target in data:
+        for input, adjacency, target in train_data:
 
             # Send data to device
             input = input.to(DEVICE)
@@ -46,12 +48,28 @@ def train(
 
             # Track progress
             count += 1
-            if DEVICE == "cuda":
-                loss = loss.cpu()
-            total_loss += loss.item()
+            total_loss += loss.cpu().item()
 
         # Log progress
-        logger.info(f"Epochs completed: \t {i + 1}/{num_epochs}")
-        logger.info(f"Mean loss: \t {'{0:.6f}'.format(total_loss / count)}")
+        logger.info(f"epochs completed: \t {i + 1}/{num_epochs}")
+        logger.info(f"mean loss: \t {'{0:.6f}'.format(total_loss / count)}")
+        if metrics_to_log:
+            logger.info("calculating training metrics...")
+            log_metrics(
+                metrics=calculate_metrics(
+                    model=model,
+                    data=train_data
+                ),
+                metrics_to_log=metrics_to_log
+            )
+            if test_data:
+                logger.info("calculating test metrics...")
+                log_metrics(
+                    metrics=calculate_metrics(
+                        model=model,
+                        data=test_data
+                    ),
+                    metrics_to_log=metrics_to_log
+                )
         logger.info("-" * 50)
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc
-from data_processing.movie_review_dataset import get_data
+from data_processing.model_data import get_model_data
 
 
 def test_make_adjacency_matrix_for_doc() -> None:
@@ -19,5 +19,5 @@ def test_make_adjacency_matrix_for_doc() -> None:
 
 
 def test_get_data() -> None:
-    get_data(embeddings_path=None, stem_tokens=True)
+    get_model_data(embeddings_path=None, stem_tokens=True)
 
