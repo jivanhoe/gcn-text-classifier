@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import List, Callable, Tuple, Optional
+from typing import List, Callable, Tuple, Optional, Dict
 
 import numpy as np
 import torch
@@ -17,19 +17,29 @@ NEGATIVE_REVIEWS_PATH = '../../data/movie_reviews/negative_reviews.txt'
 logger = logging.getLogger(__name__)
 
 
-def load_docs(path: str) -> List[List[str]]:
+def load_docs(path: str, stem_tokens: bool = False) -> List[List[str]]:
     file = io.open(path, encoding='latin-1')
     docs = []
     stemmer = PorterStemmer()
     for line in file:
-        docs.append(
-            [
-                stemmer.stem(token)
-                for token in word_tokenize(line.replace("-", " ")) if token.isalpha()
-            ]
-        )
+        doc = [token for token in word_tokenize(line.replace("-", " "))]
+        if stem_tokens:
+            doc = [stemmer.stem(token) for token in doc if token.isalpha()]
+        docs.append(doc)
     file.close()
     return docs
+
+
+def load_embeddings(path: str) -> Dict[str, np.ndarray]:
+    embeddings = {}
+    file = open(path)
+    for line in file:
+        values = line.split()
+        word = values[0]
+        vector = np.asarray(values[1:], "float64")
+        embeddings[word] = vector
+    file.close()
+    return embeddings
 
 
 def build_vocab(docs: List[List[str]], min_occurrences: int = 2, sort: bool = False) -> List[str]:
@@ -47,7 +57,8 @@ def build_vocab(docs: List[List[str]], min_occurrences: int = 2, sort: bool = Fa
         return vocab
 
 
-def make_token_to_id_lookup(vocab: List[str]) -> Callable:
+def make_token_to_id_lookup(docs: List[List[str]]) -> Tuple[Callable, int]:
+    vocab = build_vocab(docs)
     vocab_to_id = {token: i for i, token in enumerate(vocab)}
 
     def token_to_id_lookup(token: str) -> int:
@@ -55,59 +66,91 @@ def make_token_to_id_lookup(vocab: List[str]) -> Callable:
             return vocab_to_id[token]
         except KeyError:
             return len(vocab)
-    return token_to_id_lookup
+    return token_to_id_lookup, len(vocab)
 
 
-def one_hot_encode_doc(
+def get_one_hot_encodings_for_doc(
         doc: List[str],
         token_to_id_lookup: Callable,
         vocab_size: int
 ) -> np.ndarray:
-    doc_length = len(doc)
-    one_hot_encodings = np.zeros((doc_length, vocab_size + 1))
+    doc_one_hot_encodings = np.zeros((len(doc), vocab_size + 1))
     for i, token in enumerate(doc):
-        one_hot_encodings[i, token_to_id_lookup(token)] = 1
-    return one_hot_encodings
+        doc_one_hot_encodings[i, token_to_id_lookup(token)] = 1
+    return doc_one_hot_encodings
 
 
-def get_data(max_examples_per_class: Optional[int] = None) -> Tuple[
+def make_token_to_embedding_lookup(path: str) -> Tuple[Callable, int]:
+    glove_embeddings = load_embeddings(path=path)
+    embedding_size = len(list(glove_embeddings.values())[0])
+
+    def token_to_embedding_lookup(token: str) -> Optional[np.ndarray]:
+        try:
+            return glove_embeddings[token]
+        except KeyError:
+            return None
+    return token_to_embedding_lookup, embedding_size
+
+
+def get_embeddings_for_doc(
+        doc: List[str],
+        token_to_embedding_lookup: Callable
+) -> np.ndarray:
+    doc_glove_embeddings = [token_to_embedding_lookup(token) for token in doc]
+    return np.stack([embedding for embedding in doc_glove_embeddings if embedding is not None])
+
+
+def get_feature_data(docs: List[List[str]], embeddings_path: Optional[str] = None):
+    if embeddings_path:
+        token_to_embedding_lookup, in_features = make_token_to_embedding_lookup(path=embeddings_path)
+        features = [
+            get_embeddings_for_doc(
+                doc=doc,
+                token_to_embedding_lookup=token_to_embedding_lookup
+            )
+            for doc in docs
+        ]
+    else:
+        token_to_id_lookup, in_features = make_token_to_id_lookup(docs=docs)
+        features = [
+            get_one_hot_encodings_for_doc(
+                doc=doc,
+                token_to_id_lookup=token_to_id_lookup,
+                vocab_size=in_features
+            )
+            for doc in docs
+        ]
+    return features, in_features
+
+
+def get_data(
+        embeddings_path: Optional[str] = None,
+        stem_tokens: bool = False,
+        max_examples_per_class: Optional[int] = None
+) -> Tuple[
     List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
     List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-    List[str]
+    int
 ]:
-
     # Load docs
-    logger.info("Loading documents...")
-    positive_docs = load_docs(POSITIVE_REVIEWS_PATH)
-    negative_docs = load_docs(POSITIVE_REVIEWS_PATH)
+    logger.info("Loading data...")
+    positive_docs = load_docs(POSITIVE_REVIEWS_PATH, stem_tokens=stem_tokens)
+    negative_docs = load_docs(POSITIVE_REVIEWS_PATH, stem_tokens=stem_tokens)
     if max_examples_per_class:
         positive_docs = positive_docs[:max_examples_per_class]
         negative_docs = negative_docs[:max_examples_per_class]
     all_docs = positive_docs + negative_docs
-    logger.info(f"Total documents: {len(all_docs)}")
+    logger.info(f"Number of documents: \t {len(all_docs)}")
 
-    # Make vocab lookup
-    logger.info("Building vocab...")
-    vocab = build_vocab(all_docs)
-    token_to_id_lookup = make_token_to_id_lookup(vocab)
-    vocab_size = len(vocab)
-    logger.info(f"Vocab size: {vocab_size}")
-
-    # Get input data
-    logger.info("Batching data...")
-    inputs = [
-        one_hot_encode_doc(
-            doc=doc,
-            token_to_id_lookup=token_to_id_lookup,
-            vocab_size=vocab_size
-        )
-        for doc in all_docs
-    ]
+    # Get input feature data
+    logger.info("Getting input features...")
+    inputs, in_features = get_feature_data(docs=all_docs, embeddings_path=embeddings_path)
+    logger.info(f"Number of features: \t {in_features}")
 
     # Get adjacency matrix
     adjacencies = [
-        make_adjacency_matrix_for_doc(doc_length=len(doc))
-        for doc in all_docs
+        make_adjacency_matrix_for_doc(doc_length=features.shape[0])
+        for features in inputs
     ]
 
     # Get target data
@@ -134,9 +177,7 @@ def get_data(max_examples_per_class: Optional[int] = None) -> Tuple[
 
     # Zip data and return
     return list(zip(train_inputs, train_adjacencies, train_targets)), \
-        list(zip(test_inputs, test_adjacencies, test_targets)), vocab
-
-
+        list(zip(test_inputs, test_adjacencies, test_targets)), in_features
 
 
 

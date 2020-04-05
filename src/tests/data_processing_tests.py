@@ -19,4 +19,5 @@ def test_make_adjacency_matrix_for_doc() -> None:
 
 
 def test_get_data() -> None:
-    get_data()
+    get_data(embeddings_path=None, stem_tokens=True)
+

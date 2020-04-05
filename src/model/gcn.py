@@ -40,38 +40,46 @@ class GraphConvolutionalNetwork(nn.Module):
     def __init__(
             self,
             in_features: int,
-            gc_hidden_layer_sizes: List[int],
-            fc_hidden_layer_sizes: List[int],
-            gc_activation: Callable = f.selu,
-            fc_activation: Callable = f.relu
+            gc_hidden_sizes: List[int],
+            fc_hidden_sizes: List[int],
+            gc_activation: Callable = f.relu,
+            fc_activation: Callable = f.relu,
+            add_residual_connection: bool = False
     ):
         super(GraphConvolutionalNetwork, self).__init__()
-
+        self.num_gc_layers = len(gc_hidden_sizes)
+        self.num_fc_layers = len(fc_hidden_sizes)
+        self.add_residual_connection = add_residual_connection
         self.gc_layers = nn.Sequential(
             *[
                 GraphConvolutionalLayer(
-                    in_features=in_features if i == 0 else gc_hidden_layer_sizes[i - 1],
-                    out_features=gc_hidden_layer_sizes[i],
+                    in_features=gc_hidden_sizes[i - 1] if i > 0 else in_features,
+                    out_features=gc_hidden_sizes[i],
                     activation=gc_activation
                 )
-                for i in range(len(gc_hidden_layer_sizes))
+                for i in range(self.num_gc_layers)
             ]
         )
         self.fc_layers = nn.Sequential(
             *[
                 FullyConnectedLayer(
-                    in_features=gc_hidden_layer_sizes[-1] if i == 0 else fc_hidden_layer_sizes[i - 1],
-                    out_features=fc_hidden_layer_sizes[i],
-                    activation=fc_activation
+                    in_features=fc_hidden_sizes[i - 1] if i > 0 else (
+                        gc_hidden_sizes[-1] + in_features if self.add_residual_connection else
+                        gc_hidden_sizes[-1]
+                    ),
+                    out_features=fc_hidden_sizes[i],
+                    activation=fc_activation if (i < self.num_gc_layers - 1) else None
                 )
-                for i in range(len(gc_hidden_layer_sizes))
+                for i in range(self.num_gc_layers)
             ]
         )
 
     def forward(self, input: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         hidden, _ = self.gc_layers((input, adjacency))
         if self.fc_layers:
-            hidden = hidden.mean(dim=0)  # f.softmax(hidden.sum(dim=0))
+            hidden = hidden.mean(dim=0)
+            if self.add_residual_connection:
+                hidden = torch.cat((hidden, input.mean(dim=0)))
             hidden = self.fc_layers(hidden)
         return hidden
 

@@ -5,19 +5,22 @@ import logging
 
 logger = logging.basicConfig(level=logging.INFO)
 
+EMBEDDINGS_PATH = '../../data/glove/glove_6B_300d.txt'
+
 if __name__ == "__main__":
 
-    train_data, test_data, vocab = get_data(max_examples_per_class=1000)
+    train_data, test_data, in_features = get_data(embeddings_path=EMBEDDINGS_PATH, max_examples_per_class=2000)
 
     gcn = GraphConvolutionalNetwork(
-        in_features=len(vocab) + 1,
-        gc_hidden_layer_sizes=[512, 256],
-        fc_hidden_layer_sizes=[128, 2]
+        in_features=in_features,
+        gc_hidden_sizes=[256, 128],
+        fc_hidden_sizes=[64, 2],
+        add_residual_connection=False
     )
 
     train(
         model=gcn,
         data=train_data,
         num_epochs=300,
-        learning_rate=1e-3
+        learning_rate=2e-4
     )
