@@ -7,9 +7,10 @@ from model.training import train
 logger = logging.basicConfig(level=logging.INFO)
 
 # Paths
-POSITIVE_REVIEWS_PATH = '../../data/movie_reviews/positive_reviews.txt'
-NEGATIVE_REVIEWS_PATH = '../../data/movie_reviews/negative_reviews.txt'
-EMBEDDINGS_PATH = '../../data/glove/glove_6B_300d.txt'
+POSITIVE_REVIEWS_PATH = "../../data/movie_reviews/positive_reviews.txt"
+NEGATIVE_REVIEWS_PATH = "../../data/movie_reviews/negative_reviews.txt"
+EMBEDDINGS_PATH = "../../data/glove/glove_6B_300d.txt"
+MODEL_PATH = "../../data/movie_reviews_model.pt"
 
 # Model parameters
 GC_HIDDEN_SIZES = [256, 128]
@@ -37,8 +38,9 @@ if __name__ == "__main__":
     train(
         model=gcn_model,
         train_data=train_data,
-        test_data=test_data,
+        validation_data=test_data,
         num_epochs=NUM_EPOCHS,
         learning_rate=LEARNING_RATE,
-        metrics_to_log=METRICS_TO_LOG
+        metrics_to_log=METRICS_TO_LOG,
+        model_path=MODEL_PATH
     )

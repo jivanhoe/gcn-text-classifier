@@ -85,5 +85,12 @@ class GraphConvolutionalNetwork(nn.Module):
             hidden = self.fc_layers(hidden)
         return hidden
 
+    def save(self, path) -> None:
+        torch.save(self.state_dict(), path)
+
+    def load_params(self, path) -> None:
+        self.load_state_dict(torch.load(path))
+
+
 
 

@@ -14,11 +14,12 @@ logger = logging.getLogger(__name__)
 def train(
         model: GraphConvolutionalNetwork,
         train_data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-        test_data: Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = None,
+        validation_data: Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = None,
         criterion: Callable = nn.CrossEntropyLoss(),
         num_epochs: int = 10,
         learning_rate: float = 1e-3,
-        metrics_to_log: Optional[List[str]] = None
+        metrics_to_log: Optional[List[str]] = None,
+        model_path: Optional[str] = None
 ) -> None:
 
     # Send model to device and initialize optimize
@@ -52,7 +53,7 @@ def train(
 
         # Log progress
         logger.info(f"epochs completed: \t {i + 1}/{num_epochs}")
-        logger.info(f"mean loss: \t {'{0:.6f}'.format(total_loss / count)}")
+        logger.info(f"mean loss: \t {'{0:.3f}'.format(total_loss / count)}")
         if metrics_to_log:
             logger.info("calculating training metrics...")
             log_metrics(
@@ -62,14 +63,18 @@ def train(
                 ),
                 metrics_to_log=metrics_to_log
             )
-            if test_data:
-                logger.info("calculating test metrics...")
+            if validation_data:
+                logger.info("calculating validation metrics...")
                 log_metrics(
                     metrics=calculate_metrics(
                         model=model,
-                        data=test_data
+                        data=validation_data
                     ),
                     metrics_to_log=metrics_to_log
                 )
         logger.info("-" * 50)
+
+    if model_path:
+        logger.info("saving model...")
+        model.save(path=model_path)
 
