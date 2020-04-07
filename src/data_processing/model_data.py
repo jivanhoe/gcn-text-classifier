@@ -24,6 +24,7 @@ def get_model_data(
         doc_paths: List[str],
         embeddings_path: Optional[str] = None,
         stem_tokens: bool = False,
+        clean_tokens: bool = False,
         max_examples_per_class: Optional[int] = None,
         test_size: float = 0.3
 ) -> Tuple[
@@ -36,6 +37,7 @@ def get_model_data(
     docs, targets = load_docs_by_class(
         paths=doc_paths,
         stem_tokens=stem_tokens,
+        clean_tokens=clean_tokens,
         max_examples_per_class=max_examples_per_class
     )
     logger.info(f"number of documents: \t {len(docs)}")
@@ -76,8 +78,3 @@ def get_model_data(
     # Zip data and return
     return list(zip(train_inputs, train_adjacencies, train_targets)), \
         list(zip(test_inputs, test_adjacencies, test_targets)), in_features
-
-
-
-
-

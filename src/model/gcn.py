@@ -90,7 +90,3 @@ class GraphConvolutionalNetwork(nn.Module):
 
     def load_params(self, path) -> None:
         self.load_state_dict(torch.load(path))
-
-
-
-
