@@ -1,0 +1,7 @@
+data/
+
+__pycache__**
+*config.json
+*settings.json
+
+.DS_Store
