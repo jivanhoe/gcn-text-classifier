@@ -3,6 +3,10 @@ import numpy as np
 from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc
 from data_processing.model_data import get_model_data
 
+POSITIVE_REVIEWS_PATH = "../../data/movie_reviews/positive_reviews.txt"
+NEGATIVE_REVIEWS_PATH = "../../data/movie_reviews/negative_reviews.txt"
+EMBEDDINGS_PATH = "../../data/glove/glove_6B_300d.txt"
+
 
 def test_make_adjacency_matrix_for_doc() -> None:
     expected_adjacency = np.array(
@@ -19,5 +23,9 @@ def test_make_adjacency_matrix_for_doc() -> None:
 
 
 def test_get_data() -> None:
-    get_model_data(embeddings_path=None, stem_tokens=True)
+    get_model_data(
+        doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+        embeddings_path=None,
+        stem_tokens=True
+    )
 
