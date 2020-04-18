@@ -1,24 +1,31 @@
 import logging
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Union
 
 import numpy as np
 import torch
 import torch.nn.functional as f
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
 
-from model.gcn import GraphConvolutionalNetwork, DEVICE
+from models.gcn import GraphConvolutionalNetwork, DEVICE
+from models.sequential_gcn import SequentialGraphConvolutionalNetwork
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
 def predict_prob(
-        model: GraphConvolutionalNetwork,
+        model: Union[GraphConvolutionalNetwork, SequentialGraphConvolutionalNetwork],
         input: torch.Tensor,
         adjacency: torch.Tensor,
         positive_class_id: int = 1
 ) -> float:
-    predicted_probs = f.softmax(model(input=input, adjacency=adjacency), dim=-1).detach()
+    if type(model) == GraphConvolutionalNetwork:
+        output = model(input=input, adjacency=adjacency)
+    elif type(model) == SequentialGraphConvolutionalNetwork:
+        output = model(input=input)
+    else:
+        raise NotImplementedError
+    predicted_probs = f.softmax(output, dim=-1).detach()
     return predicted_probs.data.cpu().numpy()[positive_class_id]
 
 
@@ -35,7 +42,7 @@ def calculate_metrics(
         input = input.to(DEVICE)
         adjacency = adjacency.to(DEVICE)
 
-        # Get predicted probability of positive class from model and target classes
+        # Get predicted probability of positive class from models and target classes
         predicted_probs.append(
             predict_prob(
                 model=model,

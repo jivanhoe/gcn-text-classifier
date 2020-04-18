@@ -1,10 +1,11 @@
-from typing import List, Tuple, Callable, Optional
+from typing import List, Tuple, Callable, Optional, Union
 
 import torch
 import torch.nn as nn
 import logging
 
-from model.gcn import GraphConvolutionalNetwork, DEVICE
+from models.gcn import GraphConvolutionalNetwork, DEVICE
+from models.sequential_gcn import SequentialGraphConvolutionalNetwork
 from utils.metrics import calculate_metrics, log_metrics
 
 # Set up logging
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def train(
-        model: GraphConvolutionalNetwork,
+        model: Union[GraphConvolutionalNetwork, SequentialGraphConvolutionalNetwork],
         train_data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
         validation_data: Optional[List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]] = None,
         criterion: Callable = nn.CrossEntropyLoss(),
@@ -22,11 +23,12 @@ def train(
         model_path: Optional[str] = None
 ) -> None:
 
-    # Send model to device and initialize optimize
+    # Send models to device and initialize optimize
     model = model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    logger.info("training model...")
+    logger.info("training models...")
+    logger.info("-" * 50)
     for i in range(num_epochs):
 
         count = 0
@@ -39,7 +41,12 @@ def train(
             target = target.to(DEVICE)
 
             # Compute prediction and loss
-            predicted = model(input=input, adjacency=adjacency).to(DEVICE)
+            if type(model) == GraphConvolutionalNetwork:
+                predicted = model(input=input, adjacency=adjacency).to(DEVICE)
+            elif type(model) == SequentialGraphConvolutionalNetwork:
+                predicted = model(input=input).to(DEVICE)
+            else:
+                raise NotImplementedError
             loss = criterion(predicted.unsqueeze(0), target.unsqueeze(0)).to(DEVICE)
 
             # Perform gradient step
@@ -75,6 +82,6 @@ def train(
         logger.info("-" * 50)
 
     if model_path:
-        logger.info("saving model...")
+        logger.info("saving models...")
         model.save(path=model_path)
 

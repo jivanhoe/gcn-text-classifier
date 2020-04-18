@@ -44,14 +44,18 @@ class GraphConvolutionalNetwork(nn.Module):
             in_features: int,
             gc_hidden_sizes: List[int],
             fc_hidden_sizes: List[int],
-            gc_activation: Callable = f.relu,
-            fc_activation: Callable = f.relu,
-            add_residual_connection: bool = False
+            gc_activation: Callable = f.selu,
+            fc_activation: Callable = f.selu,
+            add_residual_connection: bool = False,
+            softmax_pooling: bool = False,
+            seed: int = 0
     ):
+        torch.manual_seed(seed)
         super(GraphConvolutionalNetwork, self).__init__()
         self.num_gc_layers = len(gc_hidden_sizes)
         self.num_fc_layers = len(fc_hidden_sizes)
         self.add_residual_connection = add_residual_connection
+        self.softmax_pooling = softmax_pooling
         self.gc_layers = nn.Sequential(
             *[
                 GraphConvolutionalLayer(
@@ -62,19 +66,22 @@ class GraphConvolutionalNetwork(nn.Module):
                 for i in range(self.num_gc_layers)
             ]
         )
-        self.fc_layers = nn.Sequential(
-            *[
-                FullyConnectedLayer(
-                    in_features=fc_hidden_sizes[i - 1] if i > 0 else (
-                        gc_hidden_sizes[-1] + in_features if self.add_residual_connection else
-                        gc_hidden_sizes[-1]
-                    ),
-                    out_features=fc_hidden_sizes[i],
-                    activation=fc_activation if (i < self.num_gc_layers - 1) else None
-                )
-                for i in range(self.num_gc_layers)
-            ]
-        )
+        if fc_hidden_sizes:
+            self.fc_layers = nn.Sequential(
+                *[
+                    FullyConnectedLayer(
+                        in_features=fc_hidden_sizes[i - 1] if i > 0 else (
+                            gc_hidden_sizes[-1] + in_features if self.add_residual_connection else
+                            gc_hidden_sizes[-1]
+                        ),
+                        out_features=fc_hidden_sizes[i],
+                        activation=fc_activation if (i < self.num_fc_layers - 1) else None
+                    )
+                    for i in range(self.num_fc_layers)
+                ]
+            )
+        else:
+            self.fc_layers = None
 
     def forward(self, input: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         hidden, _ = self.gc_layers((input, adjacency))
@@ -82,6 +89,8 @@ class GraphConvolutionalNetwork(nn.Module):
             hidden = hidden.mean(dim=0)
             if self.add_residual_connection:
                 hidden = torch.cat((hidden, input.mean(dim=0)))
+            if self.softmax_pooling:
+                hidden = f.softmax(hidden, dim=-1)
             hidden = self.fc_layers(hidden)
         return hidden
 

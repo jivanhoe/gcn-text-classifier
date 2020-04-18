@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from data_processing.data_loading import load_docs_by_class
 from data_processing.embedding import get_embedding_features
 from data_processing.one_hot_encoding import get_one_hot_encoding_features
-from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc
+from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc, make_custom_adjacency_matrix_for_doc
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def get_model_data(
         stem_tokens: bool = False,
         clean_tokens: bool = False,
         max_examples_per_class: Optional[int] = None,
-        test_size: float = 0.3
+        test_size: float = 0.2
 ) -> Tuple[
     List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
     List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
@@ -51,8 +51,16 @@ def get_model_data(
     logger.info(f"number of features: \t {in_features}")
 
     # Get adjacency matrix
+    # adjacencies = [
+    #     make_adjacency_matrix_for_doc(doc_length=features.shape[0])
+    #     for features in inputs
+    # ]
     adjacencies = [
-        make_adjacency_matrix_for_doc(doc_length=features.shape[0])
+        make_custom_adjacency_matrix_for_doc(
+            doc_length=features.shape[0],
+            forward_weights=[1.0],
+            backward_weights=[1.0]
+        )
         for features in inputs
     ]
 

@@ -6,8 +6,8 @@ from os import listdir
 from os.path import isfile, join
 import pandas as pd
 from data_processing.model_data import get_model_data
-from model.gcn import GraphConvolutionalNetwork
-from model.training import train
+from models.gcn import GraphConvolutionalNetwork
+from models.training import train
 from utils.metrics import calculate_metrics
 
 logger = logging.basicConfig(level=logging.INFO)
@@ -76,7 +76,7 @@ parser.add_argument(
     '--model_prefix',
     help='prefix with which to save all models',
     type=str,
-    default='model'
+    default='models'
 )
 args = parser.parse_args()
 

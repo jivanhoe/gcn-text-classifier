@@ -1,5 +1,5 @@
-from model.gcn import GraphConvolutionalNetwork
-from model.training import train
+from models.gcn import GraphConvolutionalNetwork
+from models.training import train
 from tests.factory import generate_random_input_data, generate_random_adjacency_matrix, generate_random_data
 
 NUM_VERTICES = 200
