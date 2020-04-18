@@ -5,6 +5,8 @@ from typing import List
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
+from sklearn.model_selection import train_test_split
+
 from data_processing.model_data import get_model_data
 from model.gcn import GraphConvolutionalNetwork
 from model.training import train
@@ -84,6 +86,9 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     metrics: List[str] = args.metrics
+    valid_metrics: List[str] = ["valid_" + am for am in args.metrics]
+    test_metrics: List[str] = ["test_" + am for am in args.metrics]
+
     class_files = [join(args.data_dir, f) for f in listdir(args.data_dir) if isfile(join(args.data_dir, f))]
 
     train_data, test_data, in_features = get_model_data(
@@ -92,8 +97,10 @@ if __name__ == "__main__":
         max_examples_per_class=args.max_examples
     )
 
+    train_data, valid_data = train_test_split(train_data, test_size=0.3)
+
     results = pd.DataFrame(
-        columns=['gc_hidden_layers', 'fc_hidden_layers', 'learning_rate'] + metrics
+        columns=['gc_hidden_layers', 'fc_hidden_layers', 'learning_rate'] + valid_metrics + test_metrics
     )
 
     for gc_hs in args.gc_hidden:
@@ -112,14 +119,15 @@ if __name__ == "__main__":
                     train(
                         model=gcn_model,
                         train_data=train_data,
-                        validation_data=test_data,
+                        validation_data=valid_data,
                         num_epochs=epochs,
                         learning_rate=lr,
                         metrics_to_log=metrics,
                         model_path=args.model_dir + args.model_prefix + ".pt"
                     )
 
-                    model_metrics = calculate_metrics(model=gcn_model, data=test_data)
+                    valid_metrics_result = calculate_metrics(model=gcn_model, data=valid_data)
+                    test_metrics_result = calculate_metrics(model=gcn_model, data=test_data)
 
                     result = {
                         "gc_hidden_layers": str(gc_hs),
@@ -128,7 +136,8 @@ if __name__ == "__main__":
                     }
 
                     for m in metrics:
-                        result[m] = model_metrics[m]
+                        result["test_" + m] = test_metrics_result[m]
+                        result["valid_" + m] = valid_metrics_result[m]
 
                     results = results.append(result, ignore_index=True)
 
