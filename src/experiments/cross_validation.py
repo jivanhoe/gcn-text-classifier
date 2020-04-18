@@ -34,7 +34,7 @@ parser.add_argument(
 parser.add_argument(
     '--lrs',
     help='all learning rates to try',
-    type=int,
+    type=float,
     nargs="+",
     default=[2e-4]
 )
