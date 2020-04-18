@@ -27,9 +27,10 @@ parser.add_argument(
 )
 parser.add_argument(
     '--epochs',
-    help='number of epochs',
+    help='numbers of epochs',
     type=int,
-    default=5
+    nargs="+",
+    default=[5]
 )
 parser.add_argument(
     '--lrs',
@@ -98,36 +99,37 @@ if __name__ == "__main__":
     for gc_hs in args.gc_hidden:
         for fc_hs in args.fc_hidden:
             for lr in args.lrs:
-                gcn_model = GraphConvolutionalNetwork(
-                    in_features=in_features,
-                    gc_hidden_sizes=gc_hs,
-                    fc_hidden_sizes=fc_hs,
-                    add_residual_connection=False
-                )
+                for epochs in args.epochs:
+                    gcn_model = GraphConvolutionalNetwork(
+                        in_features=in_features,
+                        gc_hidden_sizes=gc_hs,
+                        fc_hidden_sizes=fc_hs,
+                        add_residual_connection=False
+                    )
 
-                model_desc = "_gc_" + str(gc_hs) + "_fc_" + str(fc_hs) + "_lr_" + str(lr)
+                    model_desc = "_gc_" + str(gc_hs) + "_fc_" + str(fc_hs) + "_lr_" + str(lr) + "_epochs_" + str(epochs)
 
-                train(
-                    model=gcn_model,
-                    train_data=train_data,
-                    validation_data=test_data,
-                    num_epochs=args.epochs,
-                    learning_rate=lr,
-                    metrics_to_log=metrics,
-                    model_path=args.model_dir + args.model_prefix + ".pt"
-                )
+                    train(
+                        model=gcn_model,
+                        train_data=train_data,
+                        validation_data=test_data,
+                        num_epochs=epochs,
+                        learning_rate=lr,
+                        metrics_to_log=metrics,
+                        model_path=args.model_dir + args.model_prefix + ".pt"
+                    )
 
-                model_metrics = calculate_metrics(model=gcn_model, data=test_data)
+                    model_metrics = calculate_metrics(model=gcn_model, data=test_data)
 
-                result = {
-                    "gc_hidden_layers": str(gc_hs),
-                    "fc_hidden_layers": str(fc_hs),
-                    "learning_rate": lr
-                }
+                    result = {
+                        "gc_hidden_layers": str(gc_hs),
+                        "fc_hidden_layers": str(fc_hs),
+                        "learning_rate": lr
+                    }
 
-                for m in metrics:
-                    result[m] = model_metrics[m]
+                    for m in metrics:
+                        result[m] = model_metrics[m]
 
-                results = results.append(result, ignore_index=True)
+                    results = results.append(result, ignore_index=True)
 
     results.to_csv("../../data/results/" + args.model_prefix + ".csv")
