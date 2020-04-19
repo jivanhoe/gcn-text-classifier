@@ -1,14 +1,16 @@
 import argparse
 import logging
-
-from typing import List
 from os import listdir
 from os.path import isfile, join
+from typing import List
+
 import pandas as pd
+
 from data_processing.model_data import get_model_data
 from models.gcn import GraphConvolutionalNetwork
 from models.training import train
 from utils.metrics import calculate_metrics
+from experiments.movie_review_dataset_constants import *
 
 logger = logging.basicConfig(level=logging.INFO)
 
@@ -17,13 +19,13 @@ parser.add_argument(
     '--data_dir',
     help='data directory',
     type=str,
-    default="../../data/movie_reviews/"
+    default=DATA_DIR
 )
 parser.add_argument(
     '--embeddings_path',
     help='embeddings path',
     type=str,
-    default="../../data/glove/glove_6b_300d.txt"
+    default=EMBEDDINGS_PATH
 )
 parser.add_argument(
     '--epochs',
@@ -36,7 +38,7 @@ parser.add_argument(
     help='all learning rates to try',
     type=int,
     nargs="+",
-    default=[2e-4]
+    default=[LEARNING_RATE]
 )
 parser.add_argument(
     '--max_examples',
@@ -56,7 +58,7 @@ parser.add_argument(
     nargs="+",
     type=int,
     action="append",
-    default=[[256, 128]]
+    default=[GC_HIDDEN_SIZES]
 )
 parser.add_argument(
     '--fc_hidden',
@@ -64,7 +66,7 @@ parser.add_argument(
     nargs="+",
     type=int,
     action="append",
-    default=[[64, 2]]
+    default=[FC_HIDDEN_SIZES]
 )
 parser.add_argument(
     '--model_dir',
@@ -85,7 +87,7 @@ if __name__ == "__main__":
     metrics: List[str] = args.metrics
     class_files = [join(args.data_dir, f) for f in listdir(args.data_dir) if isfile(join(args.data_dir, f))]
 
-    train_data, test_data, in_features = get_model_data(
+    _, _, train_data, test_data, in_features = get_model_data(
         doc_paths=class_files,
         embeddings_path=args.embeddings_path,
         max_examples_per_class=args.max_examples

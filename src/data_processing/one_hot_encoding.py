@@ -41,8 +41,7 @@ def one_hot_encode_doc(
     return doc_one_hot_encodings
 
 
-def get_one_hot_encoding_features(docs: List[List[str]]) -> Tuple[List[np.ndarray], int]:
-
+def get_one_hot_encoding_features(docs: List[List[str]]) -> Tuple[List[List[str]], List[np.ndarray], int]:
     token_to_id_lookup, vocab_size = make_token_to_id_lookup(docs=docs)
     features = [
         one_hot_encode_doc(
@@ -52,4 +51,4 @@ def get_one_hot_encoding_features(docs: List[List[str]]) -> Tuple[List[np.ndarra
         )
         for doc in docs
     ]
-    return features, vocab_size
+    return docs, features, vocab_size

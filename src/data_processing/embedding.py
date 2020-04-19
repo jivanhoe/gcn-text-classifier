@@ -24,24 +24,26 @@ def make_token_to_embedding_lookup(path: str) -> Tuple[Callable, int]:
             return glove_embeddings[token]
         except KeyError:
             return None
+
     return token_to_embedding_lookup, embedding_size
 
 
 def embed_doc(
         doc: List[str],
         token_to_embedding_lookup: Callable
-) -> np.ndarray:
-    doc_glove_embeddings = [token_to_embedding_lookup(token) for token in doc]
-    return np.stack([embedding for embedding in doc_glove_embeddings if embedding is not None])
+) -> Tuple[List[str], np.ndarray]:
+    embedding = [token_to_embedding_lookup(token) for token in doc]
+    filtered_doc = [doc[i] for i in range(len(doc)) if embedding[i] is not None]
+    embedding = np.stack([embedding for embedding in embedding if embedding is not None])
+    return filtered_doc, embedding
 
 
-def get_embedding_features(docs: List[List[str]], path: str) -> Tuple[List[np.ndarray], int]:
+def get_embedding_features(docs: List[List[str]], path: str) -> Tuple[List[List[str]], List[np.ndarray], int]:
     token_to_embedding_lookup, embedding_size = make_token_to_embedding_lookup(path=path)
-    features = [
-        embed_doc(
-            doc=doc,
-            token_to_embedding_lookup=token_to_embedding_lookup
-        )
-        for doc in docs
-    ]
-    return features, embedding_size
+    filtered_docs = []
+    embeddings = []
+    for doc in docs:
+        filtered_doc, embedding = embed_doc(doc=doc, token_to_embedding_lookup=token_to_embedding_lookup)
+        filtered_docs.append(filtered_doc)
+        embeddings.append(embedding)
+    return filtered_docs, embeddings, embedding_size
