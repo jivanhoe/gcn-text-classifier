@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -14,12 +14,16 @@ def get_clustering_data(
         doc_paths: List[str],
         embeddings_path: str,
         model: Union[GraphConvolutionalNetwork, SequentialGraphConvolutionalNetwork],
+        forward_weights: Optional[List[float]] = None,
+        backward_weights: Optional[List[float]] = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     # Get data for model
     train_docs, test_docs, train_data, test_data, _ = get_model_data(
         doc_paths=doc_paths,
         embeddings_path=embeddings_path,
+        forward_weights=forward_weights,
+        backward_weights=backward_weights
     )
     docs = train_docs + test_docs
     data = train_data + test_data
@@ -82,11 +86,20 @@ if __name__ == "__main__":
     pretrained_model.load_params(MODEL_PATH)
 
     # Load data
-    input_emmbeddings, model_embeddings = get_clustering_data(
-        doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
-        embeddings_path=EMBEDDINGS_PATH,
-        model=pretrained_model
-    )
+    if USE_CUSTOM_ADJACENCY_MATRIX:
+        input_emmbeddings, model_embeddings = get_clustering_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            model=pretrained_model,
+            forward_weights=FORWARD_WEIGHTS,
+            backward_weights=BACKWARD_WEIGHTS
+        )
+    else:
+        input_emmbeddings, model_embeddings = get_clustering_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            model=pretrained_model
+        )
 
     input_emmbeddings.to_csv(f"{CLUSTERING_DATA_DIR}input_embeddings.csv")
     model_embeddings.to_csv(f"{CLUSTERING_DATA_DIR}model_embeddings.csv")

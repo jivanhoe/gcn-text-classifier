@@ -10,11 +10,20 @@ logger = logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
 
-    _, _, train_data, test_data, in_features = get_model_data(
-        doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
-        embeddings_path=EMBEDDINGS_PATH,
-        max_examples_per_class=MAX_EXAMPLES_PER_CLASS
-    )
+    if USE_CUSTOM_ADJACENCY_MATRIX:
+        _, _, train_data, test_data, in_features = get_model_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
+            forward_weights=FORWARD_WEIGHTS,
+            backward_weights=BACKWARD_WEIGHTS
+        )
+    else:
+        _, _, train_data, test_data, in_features = get_model_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            max_examples_per_class=MAX_EXAMPLES_PER_CLASS
+        )
 
     if USE_SEQUENTIAL_GCN:
         gcn_model = SequentialGraphConvolutionalNetwork(

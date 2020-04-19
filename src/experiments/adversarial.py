@@ -12,25 +12,40 @@ logger = logging.getLogger(__name__)
 POSITIVE_ADVERSARIAL_PHRASE = "cliche"  # Phrase to add to positive examples to trick the classifier
 # (e.g. "the movie sucks shit, you fucking stupid ass bitch")
 NEGATIVE_ADVERSARIAL_PHRASE = "decent"  # Phrase to add to negative examples to trick the classifier
-# (e.g. "one of the greatest movies, possibly ever, truly terrific")
+# (e.g. "one of the greatest movies, possibly ever, truly terrific, truly huge like my hands")
 
 
 if __name__ == "__main__":
 
-    # Get nominal test data
-    _, _, _, test_data, _ = get_model_data(
-        doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
-        embeddings_path=EMBEDDINGS_PATH,
-        max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
-    )
-
-    # Make adversarial data test data
-    _, _, _, adversarial_test_data, in_features = get_model_data(
-        doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
-        embeddings_path=EMBEDDINGS_PATH,
-        max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
-        adversarial_phrases=[POSITIVE_ADVERSARIAL_PHRASE, NEGATIVE_ADVERSARIAL_PHRASE]
-    )
+    # Get nominal test data and make adversarial data
+    if USE_CUSTOM_ADJACENCY_MATRIX:
+        _, _, _, test_data, _ = get_model_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
+            forward_weights=FORWARD_WEIGHTS,
+            backward_weights=BACKWARD_WEIGHTS,
+        )
+        _, _, _, adversarial_test_data, in_features = get_model_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
+            forward_weights=FORWARD_WEIGHTS,
+            backward_weights=BACKWARD_WEIGHTS,
+            adversarial_phrases=[POSITIVE_ADVERSARIAL_PHRASE, NEGATIVE_ADVERSARIAL_PHRASE]
+        )
+    else:
+        _, _, _, test_data, _ = get_model_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
+        )
+        _, _, _, adversarial_test_data, in_features = get_model_data(
+            doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
+            embeddings_path=EMBEDDINGS_PATH,
+            max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
+            adversarial_phrases=[POSITIVE_ADVERSARIAL_PHRASE, NEGATIVE_ADVERSARIAL_PHRASE]
+        )
 
     # Load model
     if USE_SEQUENTIAL_GCN:
