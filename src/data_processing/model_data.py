@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from nltk.tokenize import word_tokenize
 
 
-from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc
+from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc, make_custom_adjacency_matrix_for_doc
 from data_processing.data_loading import load_docs_by_class
 from data_processing.embedding import get_embedding_features
 from data_processing.one_hot_encoding import get_one_hot_encoding_features
@@ -48,6 +48,8 @@ def get_model_data(
         shuffle: bool = True,
         seed: int = 0,
         adversarial_phrases: Optional[List[str]] = None,
+        forward_weights: Optional[List[float]] = None,
+        backward_weights: Optional[List[float]] = None
 ) -> Tuple[
     List[List[str]],
     List[List[str]],
@@ -77,10 +79,20 @@ def get_model_data(
     logger.info(f"number of features: \t {in_features}")
 
     # Get adjacency matrices
-    adjacencies = [
-        make_adjacency_matrix_for_doc(doc_length=features.shape[0])
-        for features in inputs
-    ]
+    if forward_weights and backward_weights:
+        adjacencies = [
+            make_custom_adjacency_matrix_for_doc(
+                doc_length=features.shape[0],
+                forward_weights=forward_weights,
+                backward_weights=backward_weights
+            )
+            for features in inputs
+        ]
+    else:
+        adjacencies = [
+            make_adjacency_matrix_for_doc(doc_length=features.shape[0])
+            for features in inputs
+        ]
 
     # Partition data
     train_inputs, test_inputs, train_adjacencies, test_adjacencies, train_targets, test_targets, train_docs, \
