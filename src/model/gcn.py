@@ -43,14 +43,14 @@ class GraphConvolutionalNetwork(nn.Module):
             self,
             in_features: int,
             gc_hidden_sizes: List[int],
-            fc_hidden_sizes: List[int],
+            fc_hidden_sizes: Optional[List[int]],
             gc_activation: Callable = f.relu,
             fc_activation: Callable = f.relu,
             add_residual_connection: bool = False
     ):
         super(GraphConvolutionalNetwork, self).__init__()
         self.num_gc_layers = len(gc_hidden_sizes)
-        self.num_fc_layers = len(fc_hidden_sizes)
+        self.num_fc_layers = len(fc_hidden_sizes) if fc_hidden_sizes else 0
         self.add_residual_connection = add_residual_connection
         self.gc_layers = nn.Sequential(
             *[
@@ -62,19 +62,20 @@ class GraphConvolutionalNetwork(nn.Module):
                 for i in range(self.num_gc_layers)
             ]
         )
-        self.fc_layers = nn.Sequential(
-            *[
-                FullyConnectedLayer(
-                    in_features=fc_hidden_sizes[i - 1] if i > 0 else (
-                        gc_hidden_sizes[-1] + in_features if self.add_residual_connection else
-                        gc_hidden_sizes[-1]
-                    ),
-                    out_features=fc_hidden_sizes[i],
-                    activation=fc_activation if (i < self.num_gc_layers - 1) else None
-                )
-                for i in range(self.num_gc_layers)
-            ]
-        )
+        if self.num_fc_layers > 0:
+            self.fc_layers = nn.Sequential(
+                *[
+                    FullyConnectedLayer(
+                        in_features=fc_hidden_sizes[i - 1] if i > 0 else (
+                            gc_hidden_sizes[-1] + in_features if self.add_residual_connection else
+                            gc_hidden_sizes[-1]
+                        ),
+                        out_features=fc_hidden_sizes[i],
+                        activation=fc_activation if (i < self.num_gc_layers - 1) else None
+                    )
+                    for i in range(self.num_gc_layers)
+                ]
+            )
 
     def forward(self, input: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         hidden, _ = self.gc_layers((input, adjacency))
