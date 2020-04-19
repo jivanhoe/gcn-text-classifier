@@ -25,13 +25,20 @@ class GraphConvolutionalLayer(nn.Module):
 
 class FullyConnectedLayer(nn.Module):
 
-    def __init__(self, in_features: int, out_features: int, activation: Optional[Callable] = None):
+    def __init__(
+            self,
+            in_features: int,
+            out_features: int,
+            dropout: float,
+            activation: Optional[Callable] = None
+    ):
         super(FullyConnectedLayer, self).__init__()
         self.weight_matrix = nn.Linear(in_features, out_features, bias=False)
+        self.dropout = nn.Dropout(p=dropout)
         self.activation = activation
 
     def forward(self, input: torch.Tensor, activation: Optional[Callable] = None) -> torch.Tensor:
-        output = self.weight_matrix(input)
+        output = self.weight_matrix(self.dropout(input))
         if self.activation:
             output = self.activation(output)
         return output
@@ -44,6 +51,7 @@ class GraphConvolutionalNetwork(nn.Module):
             in_features: int,
             gc_hidden_sizes: List[int],
             fc_hidden_sizes: List[int],
+            dropout: float = 0.5,
             gc_activation: Callable = f.selu,
             fc_activation: Callable = f.selu,
             add_residual_connection: bool = False,
@@ -75,7 +83,8 @@ class GraphConvolutionalNetwork(nn.Module):
                             gc_hidden_sizes[-1]
                         ),
                         out_features=fc_hidden_sizes[i],
-                        activation=fc_activation if (i < self.num_fc_layers - 1) else None
+                        activation=fc_activation if (i < self.num_fc_layers - 1) else None,
+                        dropout=dropout
                     )
                     for i in range(self.num_fc_layers)
                 ]

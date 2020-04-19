@@ -16,8 +16,9 @@ class SequentialGraphConvolutionalNetwork(nn.Module):
             fc_hidden_sizes: List[int],
             forward_weights_size: int,
             backward_weights_size: int,
+            dropout: float,
             gc_activation: Callable = f.selu,
-            fc_activation: Callable = f.relu,
+            fc_activation: Callable = f.selu,
             add_residual_connection: bool = False,
             softmax_pooling: bool = False,
             seed: int = 0
@@ -26,12 +27,13 @@ class SequentialGraphConvolutionalNetwork(nn.Module):
         super(SequentialGraphConvolutionalNetwork, self).__init__()
         self.forward_weights_size = forward_weights_size
         self.backward_weights_size = backward_weights_size
-        self.forward_weights = nn.Parameter(torch.ones(forward_weights_size), requires_grad=True)
-        self.backward_weights = nn.Parameter(torch.ones(backward_weights_size), requires_grad=True)
+        self.forward_weights = nn.Parameter(0.5 * torch.ones(forward_weights_size), requires_grad=True)
+        self.backward_weights = nn.Parameter(0.5 * torch.ones(backward_weights_size), requires_grad=True)
         self.gcn = GraphConvolutionalNetwork(
             in_features=in_features,
             gc_hidden_sizes=gc_hidden_sizes,
             fc_hidden_sizes=fc_hidden_sizes,
+            dropout=dropout,
             gc_activation=gc_activation,
             fc_activation=fc_activation,
             add_residual_connection=add_residual_connection,
@@ -51,8 +53,8 @@ class SequentialGraphConvolutionalNetwork(nn.Module):
                 k = i - j - 1
                 if k >= 0:
                     adjacency[i, k] = self.backward_weights[j]
-            sqrt_inv_degree = torch.diag(adjacency.sum(dim=1).pow(-0.5))
-            adjacency = torch.matmul(sqrt_inv_degree, torch.matmul(adjacency, sqrt_inv_degree))
+        sqrt_inv_degree = torch.diag(adjacency.sum(dim=1).pow(-0.5))
+        adjacency = torch.matmul(sqrt_inv_degree, torch.matmul(adjacency, sqrt_inv_degree))
         return adjacency
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:

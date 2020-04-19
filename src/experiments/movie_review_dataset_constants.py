@@ -7,17 +7,18 @@ MODEL_PATH = "../../data/models/movie_reviews_model.pt"
 CLUSTERING_DATA_DIR = "../../data/clustering/"
 
 # Model parameters
-GC_HIDDEN_SIZES = [64, 64, 64]
-FC_HIDDEN_SIZES = [32, 2]  # Final fully-connected layer size must equal number of classes
-FORWARD_WEIGHTS = [1.0, 0.5]
-BACKWARD_WEIGHTS = [1.0, 0.5]
+GC_HIDDEN_SIZES = [128, 128]
+FC_HIDDEN_SIZES = [64, 2]  # Final fully-connected layer size must equal number of classes
+FORWARD_WEIGHTS = [0.5]
+BACKWARD_WEIGHTS = [0.5]
 FORWARD_WEIGHTS_SIZE = len(FORWARD_WEIGHTS)
 BACKWARD_WEIGHTS_SIZE = len(BACKWARD_WEIGHTS)
+DROPOUT = 0.4
 IN_FEATURES = 300
 ADD_RESIDUAL_CONNECTION = False
-SOFTMAX_POOLING = False
+SOFTMAX_POOLING = True
 USE_CUSTOM_ADJACENCY_MATRIX = True
-USE_SEQUENTIAL_GCN = False
+USE_SEQUENTIAL_GCN = True
 
 # Training parameters
 NUM_EPOCHS = 5

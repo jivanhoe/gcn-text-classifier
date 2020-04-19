@@ -16,7 +16,7 @@ if __name__ == "__main__":
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
             forward_weights=FORWARD_WEIGHTS,
-            backward_weights=BACKWARD_WEIGHTS
+            backward_weights=BACKWARD_WEIGHTS,
         )
     else:
         _, _, train_data, test_data, in_features = get_model_data(
@@ -32,6 +32,7 @@ if __name__ == "__main__":
             fc_hidden_sizes=FC_HIDDEN_SIZES,
             forward_weights_size=FORWARD_WEIGHTS_SIZE,
             backward_weights_size=BACKWARD_WEIGHTS_SIZE,
+            dropout=DROPOUT,
             add_residual_connection=ADD_RESIDUAL_CONNECTION,
             softmax_pooling=SOFTMAX_POOLING,
             seed=SEED
@@ -41,6 +42,7 @@ if __name__ == "__main__":
             in_features=in_features,
             gc_hidden_sizes=GC_HIDDEN_SIZES,
             fc_hidden_sizes=FC_HIDDEN_SIZES,
+            dropout=DROPOUT,
             add_residual_connection=ADD_RESIDUAL_CONNECTION,
             softmax_pooling=SOFTMAX_POOLING,
             seed=SEED
