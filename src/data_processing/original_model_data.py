@@ -3,13 +3,9 @@ from typing import List, Tuple, Optional
 
 import torch
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from data_processing.data_loading import load_docs_by_class
-from data_processing.embedding import get_embedding_features
-from data_processing.one_hot_encoding import get_one_hot_encoding_features
-from data_processing.adjacency_matrix import make_adjacency_matrix_for_doc
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -35,11 +31,23 @@ def get_pmi(docs, vocabulary, window_size=20):
     pmis = np.zeros((len(vocabulary), len(vocabulary)))
 
     for i in range(len(vocabulary)):
-        for j in range(i, len(vocabulary)):
+        wi = len(vocabulary[i])  # not right, but close
+        for j in range(i+1, len(vocabulary)):
+            wj = len(vocabulary[j])
+            wij = len(set(vocabulary[j] & vocabulary[i]))
             pij = wij / window_id
             pi = wi / window_id
             pj = wj / window_id
-            pmis[i, j] = np.log(pij / (pi * pj))
+            pmis[i, j] = max(np.log(pij / (pi * pj)), 0)
+
+    # makes symmetric
+    pmis = (pmis + pmis.T)
+
+    return pmis
+
+
+def numpy_to_tensor(array: List):
+    return torch.from_numpy(array).float()
 
 
 def get_original_model_data(
@@ -47,11 +55,7 @@ def get_original_model_data(
         stem_tokens: bool = False,
         clean_tokens: bool = False,
         max_examples_per_class: Optional[int] = None
-) -> Tuple[
-    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-    int
-]:
+) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     # Load docs
     logger.info("loading data...")
     docs, targets = load_docs_by_class(
@@ -75,8 +79,13 @@ def get_original_model_data(
 
     # Get adjacency matrix
     adjacencies = np.identity(total_nodes)
+
     # There are two types of adjacencies: word-to-word, and word-to-doc
     # 1. word-to-word, uses PMI
+    pmis = get_pmi(docs, vocabulary)
+
+    adjacencies[len(doc_indices):total_nodes, len(doc_indices):total_nodes] = pmis
+    np.fill_diagonal(adjacencies, 1)
 
     # 2. word-to-doc, TF-IDF
     tfidf_transformer = TfidfTransformer()
@@ -84,28 +93,8 @@ def get_original_model_data(
 
     adjacencies[0:len(doc_indices), len(doc_indices):total_nodes] = tfidfs
 
-    return adjacencies
+    final_inputs = map(numpy_to_tensor, inputs)
+    final_targets = map(torch.tensor, targets)
+    final_adj = map(numpy_to_tensor, adjacencies)
 
-    # return nodes, adjancencies, targets
-    # Partition data
-    train_inputs, test_inputs, train_adjacencies, test_adjacencies, train_targets, test_targets = train_test_split(
-        inputs,
-        adjacencies,
-        targets,
-        test_size=test_size,
-        stratify=targets,
-        shuffle=True
-    )
-
-    # Convert data to tensors
-    numpy_to_tensor = lambda array: torch.from_numpy(array).float()
-    train_inputs = map(numpy_to_tensor, train_inputs)
-    test_inputs = map(numpy_to_tensor, test_inputs)
-    train_adjacencies = map(numpy_to_tensor, train_adjacencies)
-    test_adjacencies = map(numpy_to_tensor, test_adjacencies)
-    train_targets = map(torch.tensor, train_targets)
-    test_targets = map(torch.tensor, test_targets)
-
-    # Zip data and return
-    return list(zip(train_inputs, train_adjacencies, train_targets)), \
-        list(zip(test_inputs, test_adjacencies, test_targets)), in_features
+    return list(zip(final_inputs, final_adj, final_targets))
