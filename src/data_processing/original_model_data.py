@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional
 
 import torch
 import numpy as np
@@ -11,8 +11,8 @@ from data_processing.data_loading import load_docs_by_class
 logger = logging.getLogger(__name__)
 
 
-def get_pmi(docs, vocabulary, window_size=20):
-    word_windows = {}
+def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
+    word_windows: Dict[str, List[int]] = {}
     window_id = 0
 
     # Create a dict with { word: [window_id1, window_id2, ...]}
@@ -31,10 +31,12 @@ def get_pmi(docs, vocabulary, window_size=20):
     pmis = np.zeros((len(vocabulary), len(vocabulary)))
 
     for i in range(len(vocabulary)):
-        wi = len(vocabulary[i])  # not right, but close
+        i_word = vocabulary[i]
+        wi = len(word_windows[i_word])
         for j in range(i+1, len(vocabulary)):
-            wj = len(vocabulary[j])
-            wij = len(set(vocabulary[j] & vocabulary[i]))
+            j_word = vocabulary[j]
+            wj = len(word_windows[j_word])
+            wij = len(set(word_windows[j_word]) & set(word_windows[i_word]))
             pij = wij / window_id
             pi = wi / window_id
             pj = wj / window_id
@@ -71,6 +73,7 @@ def get_original_model_data(
     logger.info("creating one-hot-encoding matrix for each word + doc")
     cv = CountVectorizer()
     cv_transform = cv.fit_transform(docs_worded)
+    breakpoint()
     total_nodes = len(docs_worded) + len(cv.vocabulary_.keys())
 
     inputs = np.identity(total_nodes)
