@@ -28,19 +28,21 @@ def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
             window_id += 1
 
     # Use that dict to compute PMI
-    pmis = np.zeros((len(vocabulary), len(vocabulary)))
+    pmis = np.zeros((len(vocabulary), len(vocabulary)), "float64")
 
     for i in range(len(vocabulary)):
         i_word = vocabulary[i]
-        wi = len(word_windows[i_word])
-        for j in range(i+1, len(vocabulary)):
-            j_word = vocabulary[j]
-            wj = len(word_windows[j_word])
-            wij = len(set(word_windows[j_word]) & set(word_windows[i_word]))
-            pij = wij / window_id
+        if i_word in word_windows:
+            wi = len(word_windows[i_word])
             pi = wi / window_id
-            pj = wj / window_id
-            pmis[i, j] = max(np.log(pij / (pi * pj)), 0)
+            for j in range(i+1, len(vocabulary)):
+                j_word = vocabulary[j]
+                if j_word in word_windows:
+                    wj = len(word_windows[j_word])
+                    wij = len(set(word_windows[j_word]) & set(word_windows[i_word])) # change to indexed arrays
+                    pij = wij / window_id
+                    pj = wj / window_id
+                    pmis[i, j] = max(np.log(pij / (pi * pj)), 0)
 
     # makes symmetric
     pmis = (pmis + pmis.T)
@@ -48,16 +50,18 @@ def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
     return pmis
 
 
-def numpy_to_tensor(array: List):
-    return torch.from_numpy(array).float()
-
-
 def get_original_model_data(
         doc_paths: List[str],
         stem_tokens: bool = False,
         clean_tokens: bool = False,
         max_examples_per_class: Optional[int] = None
-) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+) -> Tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    List[int],
+    int
+]:
     # Load docs
     logger.info("loading data...")
     docs, targets = load_docs_by_class(
@@ -73,31 +77,32 @@ def get_original_model_data(
     logger.info("creating one-hot-encoding matrix for each word + doc")
     cv = CountVectorizer()
     cv_transform = cv.fit_transform(docs_worded)
-    breakpoint()
-    total_nodes = len(docs_worded) + len(cv.vocabulary_.keys())
+    vocabulary = list(cv.vocabulary_.keys())
+    total_nodes = len(docs_worded) + len(vocabulary)
+    doc_indices = list(range(len(docs_worded)))
+    inputs = np.identity(total_nodes, "float64")
 
-    inputs = np.identity(total_nodes)
-    doc_indices = range(len(docs_worded))
-    vocab_indices = range(len(docs_worded), total_nodes)
-
+    logger.info("creating adjacency matrix")
     # Get adjacency matrix
-    adjacencies = np.identity(total_nodes)
+    adjacency = np.identity(total_nodes, "float64")
 
     # There are two types of adjacencies: word-to-word, and word-to-doc
     # 1. word-to-word, uses PMI
+    logger.info("calculating point-wise mutual information (PMI) of words")
     pmis = get_pmi(docs, vocabulary)
 
-    adjacencies[len(doc_indices):total_nodes, len(doc_indices):total_nodes] = pmis
-    np.fill_diagonal(adjacencies, 1)
+    adjacency[len(docs_worded):total_nodes, len(docs_worded):total_nodes] = pmis
+    np.fill_diagonal(adjacency, 1)
 
     # 2. word-to-doc, TF-IDF
+    logger.info("calculating TFIDF")
     tfidf_transformer = TfidfTransformer()
     tfidfs = tfidf_transformer.fit_transform(cv_transform).todense()
 
-    adjacencies[0:len(doc_indices), len(doc_indices):total_nodes] = tfidfs
+    adjacency[0:len(docs_worded), len(docs_worded):total_nodes] = tfidfs
 
-    final_inputs = map(numpy_to_tensor, inputs)
-    final_targets = map(torch.tensor, targets)
-    final_adj = map(numpy_to_tensor, adjacencies)
+    final_inputs = torch.from_numpy(inputs)
+    final_targets = torch.tensor(targets)
+    final_adj = torch.from_numpy(adjacency)
 
-    return list(zip(final_inputs, final_adj, final_targets))
+    return final_inputs, final_adj, final_targets, doc_indices, total_nodes

@@ -17,7 +17,7 @@ class GraphConvolutionalLayer(nn.Module):
 
     def forward(self, inputs: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         hidden, adjacency = inputs
-        hidden = torch.matmul(adjacency, self.weight_matrix(hidden))
+        hidden = torch.matmul(adjacency, self.weight_matrix(hidden.float()).double())
         if self.activation:
             hidden = self.activation(hidden)
         return hidden, adjacency
@@ -43,9 +43,9 @@ class GraphConvolutionalNetwork(nn.Module):
             self,
             in_features: int,
             gc_hidden_sizes: List[int],
-            fc_hidden_sizes: Optional[List[int]],
             gc_activation: Callable = f.relu,
             fc_activation: Callable = f.relu,
+            fc_hidden_sizes: Optional[List[int]] = None,
             add_residual_connection: bool = False
     ):
         super(GraphConvolutionalNetwork, self).__init__()
@@ -76,6 +76,8 @@ class GraphConvolutionalNetwork(nn.Module):
                     for i in range(self.num_gc_layers)
                 ]
             )
+        else:
+            self.fc_layers = None
 
     def forward(self, input: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         hidden, _ = self.gc_layers((input, adjacency))
