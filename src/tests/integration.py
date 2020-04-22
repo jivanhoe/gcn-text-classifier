@@ -6,7 +6,8 @@ from models.gcn import GraphConvolutionalNetwork
 from models.sequential_gcn import SequentialGraphConvolutionalNetwork
 from models.training import train
 
-logger = logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
@@ -57,5 +58,8 @@ if __name__ == "__main__":
         metrics_to_log=METRICS_TO_LOG,
         model_path=MODEL_PATH
     )
+    if USE_SEQUENTIAL_GCN:
+        logger.info(f"forward weights: \t {gcn_model.forward_weights.data}")
+        logger.info(f"backward weights: \t {gcn_model.backward_weights.data}")
 
 

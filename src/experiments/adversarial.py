@@ -55,6 +55,7 @@ if __name__ == "__main__":
             fc_hidden_sizes=FC_HIDDEN_SIZES,
             forward_weights_size=FORWARD_WEIGHTS_SIZE,
             backward_weights_size=BACKWARD_WEIGHTS_SIZE,
+            dropout=DROPOUT,
             add_residual_connection=ADD_RESIDUAL_CONNECTION,
             softmax_pooling=SOFTMAX_POOLING,
             seed=SEED
@@ -64,6 +65,7 @@ if __name__ == "__main__":
             in_features=in_features,
             gc_hidden_sizes=GC_HIDDEN_SIZES,
             fc_hidden_sizes=FC_HIDDEN_SIZES,
+            dropout=DROPOUT,
             add_residual_connection=ADD_RESIDUAL_CONNECTION,
             softmax_pooling=SOFTMAX_POOLING,
             seed=SEED

@@ -9,8 +9,8 @@ CLUSTERING_DATA_DIR = "../../data/clustering/"
 # Model parameters
 GC_HIDDEN_SIZES = [128, 128]
 FC_HIDDEN_SIZES = [64, 2]  # Final fully-connected layer size must equal number of classes
-FORWARD_WEIGHTS = [0.5]
-BACKWARD_WEIGHTS = [0.5]
+FORWARD_WEIGHTS = [0.5, 0.25, 0.125]
+BACKWARD_WEIGHTS = [0.5, 0.25, 0.125]
 FORWARD_WEIGHTS_SIZE = len(FORWARD_WEIGHTS)
 BACKWARD_WEIGHTS_SIZE = len(BACKWARD_WEIGHTS)
 DROPOUT = 0.4
@@ -21,8 +21,8 @@ USE_CUSTOM_ADJACENCY_MATRIX = True
 USE_SEQUENTIAL_GCN = True
 
 # Training parameters
-NUM_EPOCHS = 5
-LEARNING_RATE = 1e-4
+NUM_EPOCHS = 3
+LEARNING_RATE = 2e-4
 MAX_EXAMPLES_PER_CLASS = None
 METRICS_TO_LOG = ["accuracy", "auc"]
 

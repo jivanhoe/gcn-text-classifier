@@ -79,8 +79,7 @@ class GraphConvolutionalNetwork(nn.Module):
                 *[
                     FullyConnectedLayer(
                         in_features=fc_hidden_sizes[i - 1] if i > 0 else (
-                            gc_hidden_sizes[-1] + in_features if self.add_residual_connection else
-                            gc_hidden_sizes[-1]
+                            gc_hidden_sizes[-1] + in_features if self.add_residual_connection else gc_hidden_sizes[-1]
                         ),
                         out_features=fc_hidden_sizes[i],
                         activation=fc_activation if (i < self.num_fc_layers - 1) else None,

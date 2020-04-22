@@ -7,7 +7,7 @@ import torch.nn.functional as f
 from models.gcn import GraphConvolutionalNetwork
 
 
-class SequentialGraphConvolutionalNetwork(nn.Module):
+class SequentialGraphConvolutionalNetwork(GraphConvolutionalNetwork):
 
     def __init__(
             self,
@@ -21,15 +21,11 @@ class SequentialGraphConvolutionalNetwork(nn.Module):
             fc_activation: Callable = f.selu,
             add_residual_connection: bool = False,
             softmax_pooling: bool = False,
+            init_weight_decay: float = 0.8,
             seed: int = 0
     ):
-        torch.manual_seed(seed)
-        super(SequentialGraphConvolutionalNetwork, self).__init__()
-        self.forward_weights_size = forward_weights_size
-        self.backward_weights_size = backward_weights_size
-        self.forward_weights = nn.Parameter(0.5 * torch.ones(forward_weights_size), requires_grad=True)
-        self.backward_weights = nn.Parameter(0.5 * torch.ones(backward_weights_size), requires_grad=True)
-        self.gcn = GraphConvolutionalNetwork(
+        GraphConvolutionalNetwork.__init__(
+            self,
             in_features=in_features,
             gc_hidden_sizes=gc_hidden_sizes,
             fc_hidden_sizes=fc_hidden_sizes,
@@ -39,6 +35,16 @@ class SequentialGraphConvolutionalNetwork(nn.Module):
             add_residual_connection=add_residual_connection,
             softmax_pooling=softmax_pooling,
             seed=seed
+        )
+        self.forward_weights_size = forward_weights_size
+        self.backward_weights_size = backward_weights_size
+        self.forward_weights = nn.Parameter(
+            torch.tensor([init_weight_decay ** (k + 1) for k in range(forward_weights_size)]).float(),
+            requires_grad=True
+        )
+        self.backward_weights = nn.Parameter(
+            torch.tensor([init_weight_decay ** (k + 1) for k in range(backward_weights_size)]).float(),
+            requires_grad=True
         )
 
     def build_adjacency_matrix(self, input: torch.Tensor) -> torch.Tensor:
@@ -59,7 +65,7 @@ class SequentialGraphConvolutionalNetwork(nn.Module):
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         adjacency = self.build_adjacency_matrix(input)
-        return self.gcn(input=input, adjacency=adjacency)
+        return GraphConvolutionalNetwork.forward(self, input=input, adjacency=adjacency)
 
     def save(self, path) -> None:
         torch.save(self.state_dict(), path)
