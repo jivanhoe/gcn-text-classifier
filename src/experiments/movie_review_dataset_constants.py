@@ -24,7 +24,7 @@ USE_SEQUENTIAL_GCN = True
 NUM_EPOCHS = 3
 LEARNING_RATE = 2e-4
 MAX_EXAMPLES_PER_CLASS = None
-METRICS_TO_LOG = ["accuracy", "auc"]
+METRICS_TO_LOG = ["accuracy", "auc", "f1"]
 
 # Misc
 SEED = 0

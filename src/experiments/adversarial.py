@@ -19,14 +19,14 @@ if __name__ == "__main__":
 
     # Get nominal test data and make adversarial data
     if USE_CUSTOM_ADJACENCY_MATRIX:
-        _, _, _, test_data, _ = get_model_data(
+        _, data, _ = get_model_data(
             doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
             forward_weights=FORWARD_WEIGHTS,
             backward_weights=BACKWARD_WEIGHTS,
         )
-        _, _, _, adversarial_test_data, in_features = get_model_data(
+        _, adversarial_data, in_features = get_model_data(
             doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
@@ -35,12 +35,12 @@ if __name__ == "__main__":
             adversarial_phrases=[POSITIVE_ADVERSARIAL_PHRASE, NEGATIVE_ADVERSARIAL_PHRASE]
         )
     else:
-        _, _, _, test_data, _ = get_model_data(
+        _, data, _ = get_model_data(
             doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
         )
-        _, _, _, adversarial_test_data, in_features = get_model_data(
+        _, adversarial_data, in_features = get_model_data(
             doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     log_metrics(
         metrics=calculate_metrics(
             model=model,
-            data=test_data
+            data=data
         ),
         metrics_to_log=METRICS_TO_LOG
     )
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     log_metrics(
         metrics=calculate_metrics(
             model=model,
-            data=adversarial_test_data
+            data=adversarial_data
         ),
         metrics_to_log=METRICS_TO_LOG
     )

@@ -1,6 +1,6 @@
 import logging
 
-from data_processing.model_data import get_model_data
+from data_processing.model_data import get_model_data, partition_data
 from experiments.movie_review_dataset_constants import *
 from models.gcn import GraphConvolutionalNetwork
 from models.sequential_gcn import SequentialGraphConvolutionalNetwork
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
 
     if USE_CUSTOM_ADJACENCY_MATRIX:
-        _, _, train_data, test_data, in_features = get_model_data(
+        _, data, in_features = get_model_data(
             doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS,
@@ -20,11 +20,13 @@ if __name__ == "__main__":
             backward_weights=BACKWARD_WEIGHTS,
         )
     else:
-        _, _, train_data, test_data, in_features = get_model_data(
+        _, data, in_features = get_model_data(
             doc_paths=[POSITIVE_REVIEWS_PATH, NEGATIVE_REVIEWS_PATH],
             embeddings_path=EMBEDDINGS_PATH,
             max_examples_per_class=MAX_EXAMPLES_PER_CLASS
         )
+
+    train_data, val_data, test_data = partition_data(data=data)
 
     if USE_SEQUENTIAL_GCN:
         gcn_model = SequentialGraphConvolutionalNetwork(

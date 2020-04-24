@@ -44,19 +44,10 @@ def get_model_data(
         stem_tokens: bool = False,
         clean_tokens: bool = False,
         max_examples_per_class: Optional[int] = None,
-        test_size: float = 0.2,
-        shuffle: bool = True,
-        seed: int = 0,
         adversarial_phrases: Optional[List[str]] = None,
         forward_weights: Optional[List[float]] = None,
         backward_weights: Optional[List[float]] = None
-) -> Tuple[
-    List[List[str]],
-    List[List[str]],
-    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
-    int
-]:
+) -> Tuple[List[List[str]], List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], int]:
     # Load docs
     logger.info("loading data...")
     docs, targets = load_docs_by_class(
@@ -94,28 +85,38 @@ def get_model_data(
             for features in inputs
         ]
 
-    # Partition data
-    train_inputs, test_inputs, train_adjacencies, test_adjacencies, train_targets, test_targets, train_docs, \
-        test_docs = train_test_split(
-            inputs,
-            adjacencies,
-            targets,
-            docs,
-            test_size=test_size,
-            stratify=targets,
-            shuffle=shuffle,
-            random_state=seed
-        )
-
     # Convert data to tensors
     numpy_to_tensor = lambda array: torch.from_numpy(array).float()
-    train_inputs = map(numpy_to_tensor, train_inputs)
-    test_inputs = map(numpy_to_tensor, test_inputs)
-    train_adjacencies = map(numpy_to_tensor, train_adjacencies)
-    test_adjacencies = map(numpy_to_tensor, test_adjacencies)
-    train_targets = map(torch.tensor, train_targets)
-    test_targets = map(torch.tensor, test_targets)
+    inputs = map(numpy_to_tensor, inputs)
+    adjacencies = map(numpy_to_tensor, adjacencies)
+    targets = map(torch.tensor, targets)
 
     # Zip data and return
-    return train_docs, test_docs, list(zip(train_inputs, train_adjacencies, train_targets)), \
-        list(zip(test_inputs, test_adjacencies, test_targets)), in_features
+    return docs, list(zip(inputs, adjacencies, targets)), in_features
+
+
+def partition_data(
+        data,
+        val_size: float = 0.15,
+        test_size: float = 0.15,
+        seed: int = 0
+) -> Tuple[
+    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+]:
+    train_data, test_data = train_test_split(
+        data,
+        test_size=test_size,
+        stratify=[target.item() for _, _, target in data],
+        shuffle=True,
+        random_state=seed
+    )
+    train_data, val_data = train_test_split(
+        train_data,
+        test_size=val_size/(1 - test_size),
+        stratify=[target.item() for _, _, target in train_data],
+        shuffle=True,
+        random_state=seed
+    )
+    return train_data, val_data, test_data

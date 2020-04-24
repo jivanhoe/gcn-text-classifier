@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as f
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
 
-from model.gcn import GraphConvolutionalNetwork, DEVICE
+from models.gcn import GraphConvolutionalNetwork, DEVICE
 
 # Set up logging
 logger = logging.getLogger(__name__)

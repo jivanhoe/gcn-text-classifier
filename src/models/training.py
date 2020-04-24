@@ -27,7 +27,7 @@ def train(
     model = model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    logger.info("training models...")
+    logger.info("training model...")
     logger.info("-" * 50)
     for i in range(num_epochs):
 
