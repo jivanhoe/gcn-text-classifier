@@ -15,6 +15,12 @@ def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
     word_windows: Dict[str, List[int]] = {}
     window_id = 0
 
+    logger.info("Getting number of windows...")
+    num_windows = 0
+    for doc in docs:
+        num_windows += int(np.ceil(len(doc) / window_size))
+
+    logger.info("Getting words in each window...")
     # Create a dict with { word: [window_id1, window_id2, ...]}
     for doc in docs:
         windows = [doc[i:i + window_size] for i in range(0, len(doc), window_size)]
@@ -22,30 +28,30 @@ def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
         for window in windows:
             for word in window:
                 if word not in word_windows:
-                    word_windows[word] = [window_id]
-                else:
-                    word_windows[word].append(window_id)
+                    word_windows[word] = np.zeros(num_windows)
+
+                word_windows[word][window_id] = 1
             window_id += 1
 
     # Use that dict to compute PMI
     pmis = np.zeros((len(vocabulary), len(vocabulary)), "float64")
 
+    logger.info("Calculating PMIs...")
     for i in range(len(vocabulary)):
         i_word = vocabulary[i]
         if i_word in word_windows:
-            wi = len(word_windows[i_word])
-            pi = wi / window_id
+            wi = sum(word_windows[i_word])
+            pi = wi / num_windows
             for j in range(i+1, len(vocabulary)):
                 j_word = vocabulary[j]
                 if j_word in word_windows:
-                    wj = len(word_windows[j_word])
-                    wij = len(set(word_windows[j_word]) & set(word_windows[i_word])) # change to indexed arrays
-                    pij = wij / window_id
-                    pj = wj / window_id
-                    pmis[i, j] = max(np.log(pij / (pi * pj)), 0)
-
-    # makes symmetric
-    pmis = (pmis + pmis.T)
+                    wj = sum(word_windows[j_word])
+                    wij = np.dot(word_windows[j_word], word_windows[i_word])
+                    pij = wij / num_windows
+                    pj = wj / num_windows
+                    pmi = max(np.log(pij / (pi * pj)), 0)
+                    pmis[i, j] = pmi
+                    pmis[j, i] = pmi
 
     return pmis
 
