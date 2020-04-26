@@ -36,23 +36,33 @@ def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
     # Use that dict to compute PMI
     pmis = np.zeros((len(vocabulary), len(vocabulary)), "float64")
 
+    # Create matrices
+    logger.info("Creating word window matrix...")
+    vocab_mat = np.zeros((len(vocabulary), num_windows))
+    for i in range(len(vocabulary)):
+        curr_word = vocabulary[i]
+
+        if curr_word in word_windows:
+            vocab_mat[i] = word_windows[curr_word]
+
+    logger.info("Calculating pijs...")
+    pijs = np.matmul(vocab_mat, vocab_mat.T) / num_windows
+    word_window_freqs = np.sum(pijs, axis=1)
+
     logger.info("Calculating PMIs...")
     for i in range(len(vocabulary)):
-        i_word = vocabulary[i]
-        if i_word in word_windows:
-            wi = sum(word_windows[i_word])
-            pi = wi / num_windows
-            for j in range(i+1, len(vocabulary)):
-                j_word = vocabulary[j]
-                if j_word in word_windows:
-                    wj = sum(word_windows[j_word])
-                    wij = np.dot(word_windows[j_word], word_windows[i_word])
-                    pij = wij / num_windows
-                    pj = wj / num_windows
-                    pmi = max(np.log(pij / (pi * pj)), 0)
-                    pmis[i, j] = pmi
-                    pmis[j, i] = pmi
+        pi = word_window_freqs[i]
+        for j in range(i+1, len(vocabulary)):
+            pj = word_window_freqs[j]
+            pij = pijs[i, j]
 
+            if pi > 0 and pj > 0:
+                pmi = pij / (pi * pj)
+                pmis[i, j] = pmi
+                pmis[j, i] = pmi
+
+    pmis = np.log(pmis)
+    pmis = pmis.clip(min=0)
     return pmis
 
 
