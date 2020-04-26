@@ -35,7 +35,9 @@ if __name__ == "__main__":
         add_residual_connection=False
     )
 
-    train_doc_indices = np.random.choice(doc_indices, int(0.7 * len(doc_indices)))
+    # can be optimized
+    train_doc_indices = np.random.choice(doc_indices, int(0.7 * len(doc_indices)), replace=False)
+    val_doc_indices = [x for x in doc_indices if x not in train_doc_indices]
 
     train(
         model=gcn_model,
@@ -43,6 +45,7 @@ if __name__ == "__main__":
         adjacency=adjacency,
         targets=targets,
         train_doc_indices=train_doc_indices,
+        val_doc_indices=val_doc_indices,
         num_epochs=NUM_EPOCHS,
         learning_rate=LEARNING_RATE,
         metrics_to_log=METRICS_TO_LOG,
