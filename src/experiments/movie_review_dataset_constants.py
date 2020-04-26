@@ -2,7 +2,7 @@
 DATA_DIR = "../../data/movie_reviews/"
 POSITIVE_REVIEWS_PATH = f"{DATA_DIR}positive_reviews.txt"
 NEGATIVE_REVIEWS_PATH = f"{DATA_DIR}negative_reviews.txt"
-EMBEDDINGS_PATH = "../../data/glove/glove_6B_300d.txt"
+EMBEDDINGS_PATH = "../../data/glove/glove_6b_300d.txt"
 MODEL_PATH = "../../data/models/movie_reviews_model.pt"
 CLUSTERING_DATA_DIR = "../../data/clustering/"
 
