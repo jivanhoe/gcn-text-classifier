@@ -105,7 +105,7 @@ def get_original_model_data(
     # There are two types of adjacencies: word-to-word, and word-to-doc
     # 1. word-to-word, uses PMI
     logger.info("calculating point-wise mutual information (PMI) of words")
-    pmis = get_pmi(docs, vocabulary)
+    pmis = get_pmi(docs, vocabulary)  # np.zeros((len(vocabulary), len(vocabulary)))
 
     adjacency[len(docs_worded):total_nodes, len(docs_worded):total_nodes] = pmis
     np.fill_diagonal(adjacency, 1)
