@@ -18,7 +18,7 @@ GC_HIDDEN_SIZES = [256, 128, 2]
 
 # Training parameters
 NUM_EPOCHS = 5
-LEARNING_RATE = 2e-4
+LEARNING_RATE = 1e-3
 MAX_EXAMPLES_PER_CLASS = None
 METRICS_TO_LOG = ["accuracy", "auc"]
 
