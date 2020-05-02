@@ -10,14 +10,22 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class GraphConvolutionalLayer(nn.Module):
 
-    def __init__(self, in_features: int, out_features: int, activation: Optional[Callable] = None):
+    def __init__(
+            self,
+            in_features: int,
+            out_features: int,
+            dropout: float,
+            activation: Optional[Callable] = None
+    ):
         super(GraphConvolutionalLayer, self).__init__()
         self.weight_matrix = nn.Linear(in_features, out_features, bias=False)
+        self.dropout = nn.Dropout(p=dropout)
         self.activation = activation
 
     def forward(self, inputs: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         hidden, adjacency = inputs
-        hidden = torch.matmul(adjacency, self.weight_matrix(hidden))
+        hidden = self.weight_matrix(self.dropout(hidden).float()).double()
+        hidden = torch.matmul(adjacency, hidden)
         if self.activation:
             hidden = self.activation(hidden)
         return hidden, adjacency
@@ -50,8 +58,9 @@ class GraphConvolutionalNetwork(nn.Module):
             self,
             in_features: int,
             gc_hidden_sizes: List[int],
-            fc_hidden_sizes: List[int],
-            dropout: float = 0.5,
+            fc_hidden_sizes: Optional[List[int]] = None,
+            gc_dropout: float = 0,
+            fc_dropout: float = 0,
             gc_activation: Callable = f.selu,
             fc_activation: Callable = f.selu,
             add_residual_connection: bool = False,
@@ -61,7 +70,7 @@ class GraphConvolutionalNetwork(nn.Module):
         torch.manual_seed(seed)
         super(GraphConvolutionalNetwork, self).__init__()
         self.num_gc_layers = len(gc_hidden_sizes)
-        self.num_fc_layers = len(fc_hidden_sizes)
+        self.num_fc_layers = len(fc_hidden_sizes) if fc_hidden_sizes else 0
         self.add_residual_connection = add_residual_connection
         self.softmax_pooling = softmax_pooling
         self.gc_layers = nn.Sequential(
@@ -69,7 +78,8 @@ class GraphConvolutionalNetwork(nn.Module):
                 GraphConvolutionalLayer(
                     in_features=gc_hidden_sizes[i - 1] if i > 0 else in_features,
                     out_features=gc_hidden_sizes[i],
-                    activation=gc_activation
+                    activation=gc_activation,
+                    dropout=gc_dropout
                 )
                 for i in range(self.num_gc_layers)
             ]
@@ -83,7 +93,7 @@ class GraphConvolutionalNetwork(nn.Module):
                         ),
                         out_features=fc_hidden_sizes[i],
                         activation=fc_activation if (i < self.num_fc_layers - 1) else None,
-                        dropout=dropout
+                        dropout=fc_dropout
                     )
                     for i in range(self.num_fc_layers)
                 ]

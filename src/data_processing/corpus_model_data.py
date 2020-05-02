@@ -8,11 +8,12 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from data_processing.data_loading import load_docs_by_class
 
 # Set up logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
-    word_windows: Dict[str, List[int]] = {}
+    word_windows = {}
     window_id = 0
 
     logger.info("Getting number of windows...")
@@ -52,21 +53,14 @@ def get_pmi(docs: List[List[str]], vocabulary: List[str], window_size=20):
     logger.info("Calculating PMIs...")
     for i in range(len(vocabulary)):
         pi = word_window_freqs[i]
-        for j in range(i+1, len(vocabulary)):
-            pj = word_window_freqs[j]
-            pij = pijs[i, j]
+        pmis[i, :] = pijs[i, :] / (pi * word_window_freqs)
 
-            if pi > 0 and pj > 0:
-                pmi = pij / (pi * pj)
-                pmis[i, j] = pmi
-                pmis[j, i] = pmi
-
-    pmis = np.log(pmis)
+    pmis = np.log(pmis + 1e-10)
     pmis = pmis.clip(min=0)
     return pmis
 
 
-def get_original_model_data(
+def get_corpus_model_data(
         doc_paths: List[str],
         stem_tokens: bool = False,
         clean_tokens: bool = False,
@@ -116,9 +110,13 @@ def get_original_model_data(
     tfidfs = tfidf_transformer.fit_transform(cv_transform).todense()
 
     adjacency[0:len(docs_worded), len(docs_worded):total_nodes] = tfidfs
+    logger.info(adjacency.shape)
+    logger.info(adjacency.mean())
 
     final_inputs = torch.from_numpy(inputs)
     final_targets = torch.tensor(targets)
     final_adj = torch.from_numpy(adjacency)
 
     return final_inputs, final_adj, final_targets, doc_indices, total_nodes
+
+

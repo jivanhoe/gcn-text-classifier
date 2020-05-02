@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch import Tensor
 import logging
 
-from model.gcn import GraphConvolutionalNetwork, DEVICE
+from models.gcn import GraphConvolutionalNetwork, DEVICE
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -21,7 +21,6 @@ def train(
         criterion: Callable = nn.CrossEntropyLoss(),
         num_epochs: int = 10,
         learning_rate: float = 1e-3,
-        metrics_to_log: Optional[List[str]] = None,
         model_path: Optional[str] = None
 ) -> None:
 

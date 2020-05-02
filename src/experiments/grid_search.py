@@ -167,7 +167,7 @@ if __name__ == "__main__":
                                 in_features=in_features,
                                 gc_hidden_sizes=gc_hs,
                                 fc_hidden_sizes=fc_hs,
-                                dropout=dropout,
+                                fc_dropout=dropout,
                                 softmax_pooling=args.softmax_pooling,
                                 seed=seed
                             )
