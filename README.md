@@ -1,5 +1,5 @@
 # gcn-text-classifier
-Graph convolutional network for text  classification
+Graph convolutional network models for text  classification
 
 # script for cross_validation
 
